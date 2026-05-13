@@ -75,13 +75,13 @@ SYMBOLS = {
 # 1. Generazione del Dataset
 # -----------------------------------------------------------------------
 
-def _render_symbol(symbol: str, size: int = CELL_SIZE) -> np.ndarray:
+def _render_symbol(symbol: str, size: int = CELL_SIZE, with_perturbation: bool = True) -> np.ndarray:
     # Sfondo bianco, testo nero (come MNIST)
     img = Image.new("L", (size, size), color=255)
     draw = ImageDraw.Draw(img)
 
-    # Font di dimensione casuale per variabilità
-    font_size = random.randint(14, 20)
+    # Font di dimensione fissa se SENZA perturbazioni, casuale se CON
+    font_size = random.randint(14, 20) if with_perturbation else 16
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
     except (IOError, OSError):
@@ -91,22 +91,24 @@ def _render_symbol(symbol: str, size: int = CELL_SIZE) -> np.ndarray:
         except (IOError, OSError):
             font = ImageFont.load_default()
 
-    # Posizione con leggero jitter casuale
+    # Posizione: centrata se SENZA perturbazioni, con jitter se CON
     bbox  = draw.textbbox((0, 0), symbol, font=font)
     tw    = bbox[2] - bbox[0]
     th    = bbox[3] - bbox[1]
-    x     = (size - tw) // 2 + random.randint(-2, 2)
-    y     = (size - th) // 2 + random.randint(-2, 2)
+    x     = (size - tw) // 2 + (random.randint(-2, 2) if with_perturbation else 0)
+    y     = (size - th) // 2 + (random.randint(-2, 2) if with_perturbation else 0)
     draw.text((x, y), symbol, fill=0, font=font)
 
-    # Rotazione leggera (-10 a +10 gradi) per robustezza
-    angle = random.uniform(-10, 10)
-    img   = img.rotate(angle, fillcolor=255)
+    # Rotazione: leggera se CON perturbazioni, nessuna se SENZA
+    if with_perturbation:
+        angle = random.uniform(-10, 10)
+        img = img.rotate(angle, fillcolor=255)
 
-    # Rumore gaussiano leggero per simulare imperfezioni
-    arr  = np.array(img, dtype=np.float32)
-    noise = np.random.normal(0, 8, arr.shape)
-    arr  = np.clip(arr + noise, 0, 255)
+    # Rumore gaussiano: applica se CON perturbazioni, salta se SENZA
+    arr = np.array(img, dtype=np.float32)
+    if with_perturbation:
+        noise = np.random.normal(0, 8, arr.shape)
+        arr = np.clip(arr + noise, 0, 255)
 
     # Normalizzazione [0, 1] — standard per classificatori su immagini
     arr = arr / 255.0
@@ -122,32 +124,48 @@ def generate_dataset(
     cell_size: int = CELL_SIZE,
 ) -> None:
     """
-    Genera il dataset di training: per ogni simbolo crea
-    'samples_per_class' immagini con perturbazioni casuali.
+    Genera il dataset di training con DUAL-MODE:
+    - Prima metà: 50% campioni PULITI (without perturbation)
+    - Seconda metà: 50% campioni PERTURBATI (with perturbation)
+    
+    Questo migliora la robustezza del modello: impara a riconoscere i simboli
+    sia in condizioni normali che in condizioni difficili (rotazione, noise, jitter).
 
     Struttura risultante:
-      dataset/S/  -> 200 immagini .png del simbolo S
+      dataset/S/  -> 200 immagini .png del simbolo S (100 pulite + 100 perturbate)
       dataset/D/  -> 200 immagini .png del simbolo D
       ...
     """
-    print(f"[ML] Generazione dataset in '{dataset_dir}' ...")
+    print(f"[ML] Generazione dataset DUAL-MODE in '{dataset_dir}' ...")
+    print(f"[ML] Modalità: 50% PULITI + 50% PERTURBATI per migliore robustezza")
     dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    half_samples = samples_per_class // 2  # 100 per modalità
 
     for symbol in SYMBOLS:
         class_dir = dataset_dir / symbol
         class_dir.mkdir(exist_ok=True)
 
-        for i in range(samples_per_class):
-            arr = _render_symbol(symbol, cell_size)
+        # PRIMA METÀ: Campioni PULITI (with_perturbation=False)
+        for i in range(half_samples):
+            arr = _render_symbol(symbol, cell_size, with_perturbation=False)
             # Ricostruisce immagine 28x28 per salvarla su disco
             img_arr = (arr.reshape(cell_size, cell_size) * 255).astype(np.uint8)
             img = Image.fromarray(img_arr, mode="L")
             img.save(class_dir / f"{symbol}_{i:04d}.png")
 
-        print(f"  {symbol} ({SYMBOLS[symbol]}): {samples_per_class} campioni generati")
+        # SECONDA METÀ: Campioni PERTURBATI (with_perturbation=True)
+        for i in range(half_samples, samples_per_class):
+            arr = _render_symbol(symbol, cell_size, with_perturbation=True)
+            # Ricostruisce immagine 28x28 per salvarla su disco
+            img_arr = (arr.reshape(cell_size, cell_size) * 255).astype(np.uint8)
+            img = Image.fromarray(img_arr, mode="L")
+            img.save(class_dir / f"{symbol}_{i:04d}.png")
+
+        print(f"  {symbol} ({SYMBOLS[symbol]}): {half_samples} puliti + {half_samples} perturbati = {samples_per_class} totali")
 
     print(f"[ML] Dataset generato: {len(SYMBOLS)} classi x {samples_per_class} = "
-          f"{len(SYMBOLS) * samples_per_class} immagini totali")
+          f"{len(SYMBOLS) * samples_per_class} immagini totali (DUAL-MODE attivo)")
 
 
 # -----------------------------------------------------------------------
