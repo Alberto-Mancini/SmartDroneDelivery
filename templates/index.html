@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Drone Delivery - Web UI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #121218;
+            color: #dcdce6;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 16px;
+            padding: 16px;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            background: #1a1a24;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        canvas {
+            display: block;
+            border: 2px solid #404050;
+            border-radius: 4px;
+            background: #f0f0eb;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #1a1a24;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .section {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2a2a38;
+        }
+        
+        .section:last-child { border-bottom: none; }
+        
+        h2 {
+            color: #63b3ed;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: #787890;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 8px;
+            background: #242430;
+            border: 1px solid #3a3a48;
+            color: #dcdce6;
+            border-radius: 4px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        
+        select:hover, input:hover {
+            border-color: #63b3ed;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #63b3ed;
+            color: #121218;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #81c9f9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(99, 179, 237, 0.3);
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .button-row button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 12px;
+        }
+        
+        .stat-label { color: #787890; }
+        .stat-value { color: #48d597; font-weight: bold; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #242430;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #63b3ed, #48d597);
+            width: 0%;
+            transition: width 0.2s;
+        }
+        
+        .log-box {
+            background: #0a0a0e;
+            border: 1px solid #2a2a38;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 11px;
+            max-height: 150px;
+            overflow-y: auto;
+            color: #48d597;
+        }
+        
+        .log-entry {
+            padding: 2px 0;
+            word-break: break-word;
+        }
+        
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .status.running { background: #63b3ed; color: #121218; }
+        .status.paused { background: #f6ad55; color: #121218; }
+        .status.finished { background: #48d597; color: #121218; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- CANVAS AREA -->
+        <div class="canvas-area">
+            <canvas id="gridCanvas" width="800" height="600"></canvas>
+        </div>
+        
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="section">
+                <h2>Smart Drone Delivery</h2>
+                <div id="status" class="status paused">IN PAUSA</div>
+            </div>
+            
+            <div class="section">
+                <h2>Algoritmo</h2>
+                <div class="control-group">
+                    <label>Seleziona algoritmo:</label>
+                    <select id="algoSelect">
+                        <option value="A*">A* (Consigliato)</option>
+                        <option value="BFS">BFS - Breadth First Search</option>
+                        <option value="DFS">DFS - Depth First Search</option>
+                        <option value="IDS">IDS - Iterative Deepening</option>
+                        <option value="UCS">UCS - Uniform Cost Search</option>
+                        <option value="Greedy">Greedy - Best First</option>
+                        <option value="IDA*">IDA* - Iterative Deepening A*</option>
+                        <option value="RBFS">RBFS - Recursive Best First</option>
+                        <option value="SMA*">SMA* - Simplified Memory Bounded</option>
+                    </select>
+                </div>
+                <button onclick="runSimulation()">Esegui Ricerca</button>
+            </div>
+            
+            <div class="section">
+                <h2>Risultati</h2>
+                <div class="stat">
+                    <span class="stat-label">Nodi:</span>
+                    <span class="stat-value" id="statNodes">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Tempo:</span>
+                    <span class="stat-value" id="statTime">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Costo:</span>
+                    <span class="stat-value" id="statCost">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Passi:</span>
+                    <span class="stat-value" id="statSteps">-</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Controlli</h2>
+                <div class="button-row">
+                    <button onclick="togglePause()">⏸ Pausa</button>
+                    <button onclick="resetSim()">↻ Reset</button>
+                </div>
+                <div class="control-group" style="margin-top: 12px;">
+                    <label>Velocità: <span id="speedValue">2.0</span>x</label>
+                    <input type="range" id="speedSlider" min="0.5" max="20" step="0.5" value="2.0" oninput="setSpeed(this.value)">
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Log</h2>
+                <div class="log-box" id="logBox"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gridData = null;
+        let simState = null;
+        let animationId = null;
+        let nextStepTime = 0;
+        
+        // Colori tema
+        const COLORS = {
+            EMPTY: '#f0f0eb',
+            START: '#2e7d32',
+            DELIVERY: '#1565c0',
+            WIND: '#00aac1',
+            BLOCKED: '#373f4f',
+            drone: '#ffffff',
+            path_done: '#50c878',
+            path_planned: '#9696ff',
+            text: '#ffffff'
+        };
+        
+        const TYPE_MAP = { 0: 'EMPTY', 1: 'START', 4: 'DELIVERY', 5: 'WIND', 3: 'BLOCKED' };
+        
+        async function init() {
+            try {
+                const res = await fetch('/api/grid');
+                gridData = await res.json();
+                console.log('✓ Grid loaded:', gridData.rows, 'x', gridData.cols);
+                draw();
+            } catch (err) {
+                console.error('✗ Failed to load grid:', err);
+            }
+        }
+        
+        function draw() {
+            if (!gridData) return;
+            
+            const rows = gridData.rows, cols = gridData.cols;
+            const cellW = canvas.width / cols;
+            const cellH = canvas.height / rows;
+            
+            ctx.fillStyle = '#f0f0eb';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw cells
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = gridData.cells[r][c];
+                    const color = COLORS[TYPE_MAP[cell.type]] || '#f0f0eb';
+                    ctx.fillStyle = color;
+                    ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(c * cellW, r * cellH, cellW, cellH);
+                    
+                    // Draw label
+                    const label = { 1: 'S', 4: 'D', 5: 'W', 3: 'X' }[cell.type];
+                    if (label) {
+                        ctx.fillStyle = cell.type === 5 ? '#000' : '#fff';
+                        ctx.font = `bold ${cellW * 0.4}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
+                    }
+                }
+            }
+            
+            // Draw path
+            if (simState && simState.step_index > 0) {
+                ctx.strokeStyle = COLORS.path_done;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                const [r0, c0] = [simState.current_pos[0], simState.current_pos[1]];
+                ctx.moveTo(c0 * cellW + cellW / 2, r0 * cellH + cellH / 2);
+                ctx.lineTo(c0 * cellW + cellW / 2, r0 * cellH + cellH / 2);
+                ctx.stroke();
+            }
+            
+            // Draw drone
+            if (simState && simState.current_pos) {
+                const [r, c] = simState.current_pos;
+                ctx.fillStyle = COLORS.drone;
+                ctx.beginPath();
+                ctx.arc(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW / 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#63b3ed';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        
+        async function runSimulation() {
+            const algo = document.getElementById('algoSelect').value;
+            try {
+                const res = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ algorithm: algo })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✓ Percorso trovato!\nNodi: ${data.nodes_expanded}\nCosto: ${data.total_cost.toFixed(2)}\nTempo: ${data.time_ms.toFixed(1)}ms`);
+                    document.getElementById('statNodes').textContent = data.nodes_expanded;
+                    document.getElementById('statTime').textContent = data.time_ms.toFixed(1) + 'ms';
+                    document.getElementById('statCost').textContent = data.total_cost.toFixed(2);
+                    document.getElementById('statSteps').textContent = data.path.length - 1;
+                    startAnimation();
+                } else {
+                    alert('✗ Errore: ' + data.message);
+                }
+            } catch (err) {
+                console.error('✗ Error:', err);
+            }
+        }
+        
+        async function togglePause() {
+            try {
+                await fetch('/api/pause', { method: 'POST' });
+                updateState();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        
+        function resetSim() {
+            if (animationId) cancelAnimationFrame(animationId);
+            init();
+        }
+        
+        async function setSpeed(val) {
+            document.getElementById('speedValue').textContent = val;
+            await fetch('/api/speed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ speed: parseFloat(val) })
+            });
+        }
+        
+        async function updateState() {
+            try {
+                const res = await fetch('/api/state');
+                simState = await res.json();
+                
+                const status = document.getElementById('status');
+                if (simState.finished) {
+                    status.className = 'status finished';
+                    status.textContent = 'COMPLETATA ✓';
+                } else if (simState.paused) {
+                    status.className = 'status paused';
+                    status.textContent = 'IN PAUSA';
+                } else {
+                    status.className = 'status running';
+                    status.textContent = 'IN CORSO';
+                }
+                
+                document.getElementById('progressBar').style.width = 
+                    (simState.total_steps > 0 ? (simState.step_index / simState.total_steps) * 100 : 0) + '%';
+                
+                draw();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        
+        function startAnimation() {
+            nextStepTime = performance.now();
+            
+            function animate(time) {
+                if (simState && !simState.paused && !simState.finished) {
+                    const dt = 1.0 / 60 / simState.speed; // Adjust for speed
+                    if (time >= nextStepTime) {
+                        fetch('/api/step', { method: 'POST' })
+                            .then(() => updateState())
+                            .catch(console.error);
+                        nextStepTime = time + (1000 / 2 / simState.speed); // Step every 500ms / speed
+                    }
+                }
+                updateState();
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // Init
+        init();
+        setInterval(updateState, 100);
+    </script>
+</body>
+</html>
