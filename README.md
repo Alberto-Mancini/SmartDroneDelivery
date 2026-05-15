@@ -227,7 +227,9 @@ git push origin feature/my-feature
 
 ## 📄 Licenza
 
-Progetto accademico - Libero uso
+MIT License - © 2026 Alberto Mancini
+
+Questo progetto è distribuito sotto licenza MIT. Vedi il file [LICENSE](LICENSE) per i dettagli.
 
 ## 👨‍💻 Autore
 
