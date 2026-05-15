@@ -24,9 +24,9 @@ Sistema di **simulazione e ottimizzazione** per consegne tramite droni in grigli
 
 ### 1. Setup ambiente virtuale
 ```bash
-cd /home/manci/Project/SmartDroneDelivery
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+# oppure: venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
@@ -35,10 +35,10 @@ pip install -r requirements.txt
 python ml_classifier.py
 ```
 Output atteso:
-- Genera dataset 1000 immagini (5 classi)
+- Genera dataset 1000 immagini (5 classi, dual-mode: 50% puliti + 50% perturbati)
 - Allena KNN con train/test split 80/20
 - Salva modello in `knn_model.pkl`
-- Accuracy: ~98%
+- Accuracy: ~99%
 
 ### 3. Lanciare simulazione
 ```bash
@@ -78,11 +78,14 @@ SmartDroneDelivery/
 │   ├── W/  (WIND)
 │   ├── X/  (BLOCKED)
 │   └── E/  (EMPTY)
-├── requirements.txt           # Dipendenze Python
+├── requirements.txt           # Dipendenze Python (numpy, pillow, scikit-learn, pygame)
 ├── .gitignore                 # Esclude venv, cache, modelli generati
 ├── knn_model.pkl              # Modello addestrato (generato)
 ├── test_map.png               # Mappa di test (generata)
-└── README.md                  # Questo file
+├── LICENSE                    # MIT License
+├── README.md                  # Questo file
+├── DEBUGGING_LOG.md           # Log debugging e risoluzione problemi
+└── ML_MODEL_FIX.md            # Analisi e fix del classificatore ML
 ```
 
 ## 🧠 Algoritmi Implementati
@@ -109,8 +112,8 @@ SmartDroneDelivery/
 Premi **C** in-game per confrontare tutti gli algoritmi abilitati:
 
 ```
-[ML] Dataset: 1000 campioni, 5 classi
-[ML] Accuracy: 0.9850
+[ML] Dataset: 1000 campioni, 5 classi (dual-mode: 50% puliti + 50% perturbati)
+[ML] Accuracy: 0.9950
 
 CONFRONTO ALGORITMI ABILITATI
 ================================================
@@ -122,12 +125,11 @@ BFS: 34 nodi | 102.1ms | Costo: 24.5 | Passi: 18
 ## 🤖 Classificatore ML
 
 - **Algoritmo**: K-Nearest Neighbors (k=3, distanza euclidea)
-- **Dataset**: 1000 immagini 28x28 (200 per classe)
+- **Dataset**: 1000 immagini 28x28 (200 per classe, dual-mode: 50% puliti + 50% con perturbazioni)
 - **Preprocessing**: Normalizzazione [0,1], appiattimento a 784 feature
 - **Training**: 800 campioni (80%)
 - **Test**: 200 campioni (20%)
-- **Accuracy**: 98.5%
-- **Caratteristica**: Dataset mixed (50% pulito + 50% con perturbazioni per robustezza)
+- **Accuracy**: 99.5% (alta robustezza grazie al dual-mode dataset)
 
 ## 🎯 Strategie di Testing
 
@@ -230,7 +232,3 @@ git push origin feature/my-feature
 MIT License - © 2026 Alberto Mancini
 
 Questo progetto è distribuito sotto licenza MIT. Vedi il file [LICENSE](LICENSE) per i dettagli.
-
-## 👨‍💻 Autore
-
-Alberto Mancini | 2026
