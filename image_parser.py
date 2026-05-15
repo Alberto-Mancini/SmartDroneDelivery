@@ -58,6 +58,7 @@ def parse_image_ml(
         )
 
     cells = np.empty((n_rows, n_cols), dtype=object)
+    symbols_predicted = []
 
     for row in range(n_rows):
         for col in range(n_cols):
@@ -68,11 +69,13 @@ def parse_image_ml(
 
             # Classifica la cella col KNN
             symbol    = predict_cell(cell_img, knn, cell_size)
+            symbols_predicted.append(symbol)
             cell_type = SYMBOL_TO_CELL.get(symbol, CellType.EMPTY)
             cells[row, col] = GridCell(cell_type=cell_type)
 
     grid = Grid(cells)
     print(f"[image_parser ML] Griglia {grid.rows}x{grid.cols} caricata da '{image_path.name}'")
+    print(f"  Simboli predetti: {''.join(symbols_predicted)}")
     print(f"  Modalita': KNN (k=3, distanza euclidea)")
     print(f"  START={grid.start_pos}")
     print(f"  Consegne trovate: {len(grid.delivery_positions)}")

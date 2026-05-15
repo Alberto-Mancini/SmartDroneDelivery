@@ -18,6 +18,9 @@ knn_model.pkl
 # Generated test files
 test_map.png
 
+# ML Dataset (generated, 1000+ immagini)
+dataset/
+
 # IDE/Editor
 .vscode/
 .idea/

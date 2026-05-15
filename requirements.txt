@@ -2,3 +2,5 @@ numpy
 pillow
 scikit-learn
 pygame
+flask==2.3.3
+flask-cors==4.0.0
